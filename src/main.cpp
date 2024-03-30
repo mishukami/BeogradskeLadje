@@ -53,11 +53,13 @@ struct PointLight {
 
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
+    glm::vec3 dirLightDir = glm::vec3(-0.2f, -1.0f, -0.3f);
+    glm::vec3 dirLightAmbDiffSpec = glm::vec3(0.3f, 0.3f,0.2f);
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
     glm::vec3 backpackPosition = glm::vec3(0.0f);
-    float backpackScale = 1.0f;
+    float backpackScale = 0.5f;
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -115,7 +117,7 @@ int main() {
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SaveTheBees", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -141,19 +143,19 @@ int main() {
 
     programState = new ProgramState;
     programState->LoadFromFile("resources/program_state.txt");
-    if (programState->ImGuiEnabled) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
-    // Init Imgui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void) io;
+//    if (programState->ImGuiEnabled) {
+//        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+//    }
+//    // Init Imgui
+//    IMGUI_CHECKVERSION();
+//    ImGui::CreateContext();
+//    ImGuiIO &io = ImGui::GetIO();
+//    (void) io;
 
 
 
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330 core");
+//    ImGui_ImplGlfw_InitForOpenGL(window, true);
+//    ImGui_ImplOpenGL3_Init("#version 330 core");
 
     // configure global opengl state
     // -----------------------------
@@ -165,12 +167,24 @@ int main() {
 
     // load models
     // -----------
-    Model ourModel("resources/objects/backpack/backpack.obj");
+    Model ourModel("resources/objects/all_the_bees_are_gone./scene.gltf");
     ourModel.SetShaderTextureNamePrefix("material.");
+
+    //grad
+   // stbi_set_flip_vertically_on_load(false);
+    Model ourCity("resources/objects/panel/scene.gltf");
+    ourCity.SetShaderTextureNamePrefix("material.");
+  //  stbi_set_flip_vertically_on_load(true);
+
+    //boat
+    stbi_set_flip_vertically_on_load(false);
+    Model ourBoat("resources/objects/victorian_row_boat/scene.gltf");
+    ourBoat.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-    pointLight.ambient = glm::vec3(0.1, 0.1, 0.1);
+    pointLight.ambient = glm::vec3(1.0, 1.0, 1.0);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
@@ -204,6 +218,12 @@ int main() {
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
+        //directional light
+        ourShader.setVec3("dirLight.direction", programState->dirLightDir);
+        ourShader.setVec3("dirLight.ambient", glm::vec3(programState->dirLightAmbDiffSpec.x));
+        ourShader.setVec3("dirLight.diffuse", glm::vec3(programState->dirLightAmbDiffSpec.y));
+        ourShader.setVec3("dirLight.specular", glm::vec3(programState->dirLightAmbDiffSpec.z));
+
         pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
@@ -223,14 +243,29 @@ int main() {
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model,
-                               programState->backpackPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->backpackScale));    // it's a bit too big for our scene, so scale it down
-        ourShader.setMat4("model", model);
-        ourModel.Draw(ourShader);
+//        model = glm::translate(model,
+//                               programState->backpackPosition); // translate it down so it's at the center of the scene
+//        model = glm::scale(model, glm::vec3(programState->backpackScale));    // it's a bit too big for our scene, so scale it down
+//        ourShader.setMat4("model", model);
+//        ourModel.Draw(ourShader);
 
-        if (programState->ImGuiEnabled)
-            DrawImGui(programState);
+//        render city model
+        glm::mat4 cityModel = model;
+        cityModel = glm::translate(cityModel,glm::vec3 (0.0f));
+        cityModel = glm::scale(cityModel, glm::vec3(0.015f));
+        cityModel = glm::rotate(cityModel,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        ourShader.setMat4("model", cityModel);
+        ourCity.Draw(ourShader);
+
+        //render boat model
+        glm::mat4 boatModel = model;
+        boatModel = glm::translate(boatModel,glm::vec3 (0.0f));
+        boatModel = glm::scale(boatModel, glm::vec3(5.0f));
+        //cityModel = glm::rotate(cityModel,glm::radians(195.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        ourShader.setMat4("model", boatModel);
+        ourBoat.Draw(ourShader);
+        //if (programState->ImGuiEnabled)
+         //   DrawImGui(programState);
 
 
 
@@ -240,11 +275,11 @@ int main() {
         glfwPollEvents();
     }
 
-    programState->SaveToFile("resources/program_state.txt");
+   // programState->SaveToFile("resources/program_state.txt");
     delete programState;
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+   // ImGui_ImplOpenGL3_Shutdown();
+    //ImGui_ImplGlfw_Shutdown();
+    //ImGui::DestroyContext();
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
