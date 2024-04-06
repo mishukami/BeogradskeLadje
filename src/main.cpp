@@ -26,6 +26,10 @@ void processInput(GLFWwindow *window);
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
+unsigned int loadTexture(char const *path);
+
+unsigned int loadCubemap(vector<std::string> faces);
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -51,16 +55,24 @@ struct PointLight {
     float quadratic;
 };
 
+struct DirLight {
+    // vec3 position; // no longer necessary when using directional lights.
+    glm::vec3 direction;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
-    glm::vec3 dirLightDir = glm::vec3(-0.2f, -1.0f, -0.3f);
-    glm::vec3 dirLightAmbDiffSpec = glm::vec3(0.3f, 0.3f,0.2f);
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
     glm::vec3 backpackPosition = glm::vec3(0.0f);
     float backpackScale = 0.5f;
     PointLight pointLight;
+    DirLight dirLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
 
@@ -117,7 +129,7 @@ int main() {
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SaveTheBees", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "JedrilicePanonskogMora", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -160,19 +172,156 @@ int main() {
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
+    Shader skyboxShader("resources/shaders/skyboxShader.vs", "resources/shaders/skyboxShader.fs");
+    Shader planeShader("resources/shaders/planeShader.vs", "resources/shaders/planeShader.fs");
+    Shader blendingShader("resources/shaders/blendingShader.vs", "resources/shaders/blendingShader.fs");
+
+    float skyboxVertices[] = {
+            // positions
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            -1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f
+    };
+
+    // skybox VAO
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    vector<std::string> faces_day {
+            FileSystem::getPath("resources/textures/skybox/px.png"),
+            FileSystem::getPath("resources/textures/skybox/nx.png"),
+            FileSystem::getPath("resources/textures/skybox/py.png"),
+            FileSystem::getPath("resources/textures/skybox/ny.png"),
+            FileSystem::getPath("resources/textures/skybox/pz.png"),
+            FileSystem::getPath("resources/textures/skybox/nz.png")
+    };
+    stbi_set_flip_vertically_on_load(false);
+    unsigned int cubemapTexture = loadCubemap(faces_day);
+    stbi_set_flip_vertically_on_load(true);
+
+    //skybox shader
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
+
+    //Ravan koja predstavlja vodu
+    float planeVertices[] = {
+            //      vertex                      texture             normal
+            50.0f, -1.0f,  50.0f,  10.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f, -50.0f,  0.0f, 10.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f,  50.0f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+
+
+            50.0f, -1.0f,  50.0f,  10.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            50.0f, -1.0f, -50.0f,  10.0f, 10.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f, -50.0f,  0.0f, 10.0f, 0.0f, 1.0f, 0.0f
+    };
+
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+
+    glBindVertexArray(planeVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+
+    //glBindVertexArray(0);
+
+    unsigned int waterTexture = loadTexture("resources/textures/water_texture3.png");
+    blendingShader.use();
+    blendingShader.setInt("texture1", 0);
+
+    unsigned int sandTexture = loadTexture("resources/textures/sand_texture1.jpg");
+    planeShader.use();
+    planeShader.setInt("texture1", 0);
+
+//    //Quad
+//    float quadVertices[] = {
+//            // positions        // texture Coords
+//            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, //4
+//            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, //2
+//            1.0f,  1.0f, 0.0f, 1.0f, 1.0f, //1
+//            1.0f, -1.0f, 0.0f, 1.0f, 0.0f, //3
+//    };
+//
+//    // setup plane VAO
+//    unsigned int quadVAO, quadVBO;
+//    glGenVertexArrays(1, &quadVAO);
+//    glGenBuffers(1, &quadVBO);
+//    glBindVertexArray(quadVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+//    glEnableVertexAttribArray(1);
+//    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
 
     // load models
     // -----------
-    Model ourModel("resources/objects/all_the_bees_are_gone./scene.gltf");
-    ourModel.SetShaderTextureNamePrefix("material.");
-
     //grad
    // stbi_set_flip_vertically_on_load(false);
-    Model ourCity("resources/objects/panel/scene.gltf");
+    Model ourCity("resources/objects/building_06/scene.gltf");
     ourCity.SetShaderTextureNamePrefix("material.");
   //  stbi_set_flip_vertically_on_load(true);
 
@@ -182,17 +331,25 @@ int main() {
     ourBoat.SetShaderTextureNamePrefix("material.");
     stbi_set_flip_vertically_on_load(true);
 
+    //plane
+    stbi_set_flip_vertically_on_load(false);
+    Model ourPlane("resources/objects/airplane_crj-900_cityjet/scene.gltf");
+    ourBoat.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
+
+    //let there be.. lights!
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
     pointLight.ambient = glm::vec3(1.0, 1.0, 1.0);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
+
     pointLight.constant = 1.0f;
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
 
-
+    DirLight& dirLight = programState->dirLight;
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -206,6 +363,12 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        //light settings
+        dirLight.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+        dirLight.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
+        dirLight.diffuse = glm::vec3(0.8f, 0.8f, 0.8f);
+        dirLight.specular = glm::vec3(0.2f, 0.2f, 0.2f);
+
         // input
         // -----
         processInput(window);
@@ -216,15 +379,73 @@ int main() {
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+//        //renderujemo vodu
+//        planeShader.use();
+//        glm::mat4 model = glm::mat4(1.0f);
+//        // view/projection transformations
+//        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
+//                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+//        glm::mat4 view = programState->camera.GetViewMatrix();
+//        planeShader.setMat4("view", view);
+//        planeShader.setMat4("projection", projection);
+//
+//        glBindVertexArray(planeVAO);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, waterTexture);
+//        model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+//        planeShader.setMat4("model", model);
+//
+//
+//        planeShader.setVec3("dirLight.direction", dirLight.direction);
+//        planeShader.setVec3("dirLight.ambient", dirLight.ambient);
+//        planeShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+//        planeShader.setVec3("dirLight.specular", dirLight.specular);
+//        planeShader.setFloat("shininess", 1.0f);
+//
+//
+//        glDrawArrays(GL_TRIANGLES, 0, 6);
+//        glBindVertexArray(0);
+
+        //renderujemo dno
+        //----------
+        planeShader.use();
+        glm::mat4 model = glm::mat4(1.0f);
+        // view/projection transformations
+        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
+                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+        glm:: mat4 view = programState->camera.GetViewMatrix();
+        planeShader.setMat4("view", view);
+        planeShader.setMat4("projection", projection);
+
+        glBindVertexArray(planeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, sandTexture);
+        model = glm::translate(model, glm::vec3(0.0f, -5.0f, 0.0f));
+        planeShader.setMat4("model", model);
+
+
+        planeShader.setVec3("dirLight.direction", dirLight.direction);
+        planeShader.setVec3("dirLight.ambient", dirLight.ambient);
+        planeShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+        planeShader.setVec3("dirLight.specular", dirLight.specular);
+        planeShader.setFloat("shininess", 1.0f);
+
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+        //---------------
+
         // don't forget to enable shader before setting uniforms
         ourShader.use();
         //directional light
-        ourShader.setVec3("dirLight.direction", programState->dirLightDir);
-        ourShader.setVec3("dirLight.ambient", glm::vec3(programState->dirLightAmbDiffSpec.x));
-        ourShader.setVec3("dirLight.diffuse", glm::vec3(programState->dirLightAmbDiffSpec.y));
-        ourShader.setVec3("dirLight.specular", glm::vec3(programState->dirLightAmbDiffSpec.z));
+        ourShader.setVec3("dirLight.direction", dirLight.direction);
+        ourShader.setVec3("dirLight.ambient", dirLight.ambient);
+        ourShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+        ourShader.setVec3("dirLight.specular", dirLight.specular);
+        //ourShader.setFloat("material.shininess", 16.0f);
 
-        pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
+        //point light
+        pointLight.position = glm::vec3(4.0 , 4.0f, 4.0);
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -234,40 +455,89 @@ int main() {
         ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
-        // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
-                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = programState->camera.GetViewMatrix();
+
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
         // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-//        model = glm::translate(model,
-//                               programState->backpackPosition); // translate it down so it's at the center of the scene
-//        model = glm::scale(model, glm::vec3(programState->backpackScale));    // it's a bit too big for our scene, so scale it down
-//        ourShader.setMat4("model", model);
-//        ourModel.Draw(ourShader);
+
+        model = glm::mat4(1.0f);
+//      render city model far
+        glm::mat4 cityModelFar = model;
+        cityModelFar = glm::translate(cityModelFar,glm::vec3 (0.0f, -0.5f, -2.0f));
+        cityModelFar = glm::scale(cityModelFar, glm::vec3(1.0f, 0.7f, 1.0f));
+        cityModelFar = glm::rotate(cityModelFar,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        ourShader.setMat4("model", cityModelFar);
+        ourCity.Draw(ourShader);
 
 //        render city model
-        glm::mat4 cityModel = model;
-        cityModel = glm::translate(cityModel,glm::vec3 (0.0f));
-        cityModel = glm::scale(cityModel, glm::vec3(0.015f));
-        cityModel = glm::rotate(cityModel,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
-        ourShader.setMat4("model", cityModel);
+        glm::mat4 cityModelMiddle = model;
+        cityModelMiddle = glm::translate(cityModelMiddle,glm::vec3 (0.0f, -0.5f, 0.0f));
+        //cityModelMiddle = glm::scale(cityModelMiddle, glm::vec3(1.2f));
+        cityModelMiddle = glm::rotate(cityModelMiddle,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        ourShader.setMat4("model", cityModelMiddle);
+        ourCity.Draw(ourShader);
+
+//        render city model near
+        glm::mat4 cityModelNear = model;
+        cityModelNear = glm::translate(cityModelNear,glm::vec3 (0.0f, -0.5f, 2.0f));
+        cityModelNear = glm::scale(cityModelNear, glm::vec3(1.0f, 1.3f, 1.0f));
+        cityModelNear = glm::rotate(cityModelNear,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        ourShader.setMat4("model", cityModelNear);
         ourCity.Draw(ourShader);
 
         //render boat model
         glm::mat4 boatModel = model;
-        boatModel = glm::translate(boatModel,glm::vec3 (0.0f));
-        boatModel = glm::scale(boatModel, glm::vec3(5.0f));
+        boatModel = glm::translate(boatModel,glm::vec3 (0.0f, 0.0f, 0.5f));
+        boatModel = glm::scale(boatModel, glm::vec3(6.0f, 6.0f, 5.0f));
         //cityModel = glm::rotate(cityModel,glm::radians(195.0f), glm::vec3(0.0f ,1.0f, 0.0f));
         ourShader.setMat4("model", boatModel);
         ourBoat.Draw(ourShader);
+
+        //render plane model
+        glm::mat4 planeModel = model;
+        planeModel = glm::translate(planeModel,glm::vec3 (4.0f));
+        //planeModel = glm::scale(planeModel, glm::vec3(6.0f, 5.0f, 5.0f));
+        planeModel = glm::rotate(planeModel,glm::radians(180.0f), glm::vec3(0.0f ,0.0f, 1.0f));
+        planeModel = glm::rotate(planeModel,glm::radians(90.0f), glm::vec3(1.0f ,0.0f, 0.0f));
+        ourShader.setMat4("model", planeModel);
+        ourPlane.Draw(ourShader);
+
+        //wasser
+        glBindVertexArray(planeVAO);
+        glBindTexture(GL_TEXTURE_2D, waterTexture);
+
+        blendingShader.use();
+        blendingShader.setInt("texture1", 0);
+        blendingShader.setMat4("projection", projection);
+        blendingShader.setMat4("view", view);
+
+        blendingShader.setVec3("dirLight.direction", dirLight.direction);
+        blendingShader.setVec3("dirLight.ambient", dirLight.ambient);
+        blendingShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+        blendingShader.setVec3("dirLight.specular", dirLight.specular);
+        blendingShader.setFloat("shininess", 32.0f);
+
+        blendingShader.use();
+        blendingShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
         //if (programState->ImGuiEnabled)
          //   DrawImGui(programState);
 
-
+        // draw skybox as last
+        glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+        skyboxShader.use();
+        view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix())); // remove translation from the view matrix
+        skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("projection", projection);
+        // skybox cube
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+        glDepthFunc(GL_LESS); // set depth function back to default
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -277,6 +547,8 @@ int main() {
 
    // programState->SaveToFile("resources/program_state.txt");
     delete programState;
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVAO);
    // ImGui_ImplOpenGL3_Shutdown();
     //ImGui_ImplGlfw_Shutdown();
     //ImGui::DestroyContext();
@@ -380,4 +652,79 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
+}
+
+// loads a cubemap texture from 6 individual texture faces
+// order:
+// +X (right)
+// -X (left)
+// +Y (top)
+// -Y (bottom)
+// +Z (front)
+// -Z (back)
+// -------------------------------------------------------
+unsigned int loadCubemap(vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+
+unsigned int loadTexture(char const *path) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data) {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4) {
+            format = GL_RGBA;
+            //std::cout << "texture has an alpha component: " << path << std::endl;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
