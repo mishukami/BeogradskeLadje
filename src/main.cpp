@@ -339,15 +339,24 @@ int main() {
 
     //let there be.. lights!
     PointLight& pointLight = programState->pointLight;
-    pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-    pointLight.ambient = glm::vec3(1.0, 1.0, 1.0);
-    pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
-    pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
+//    pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
+//    pointLight.ambient = glm::vec3(1.0, 1.0, 1.0);
+//    pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
+//    pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
+//
+//
+//    pointLight.constant = 1.0f;
+//    pointLight.linear = 0.09f;
+//    pointLight.quadratic = 0.032f;
 
+    pointLight.position = glm::vec3(0.0f, 1.0f, 2.7f);
+    pointLight.ambient = glm::vec3(0.95, 0.5, 0.0);
+    pointLight.diffuse = glm::vec3(4.0f, 2.6f, 0.4f);
+    pointLight.specular = glm::vec3(0.5f);
 
     pointLight.constant = 1.0f;
-    pointLight.linear = 0.09f;
-    pointLight.quadratic = 0.032f;
+    pointLight.linear = 0.5f;
+    pointLight.quadratic = 1.1f;
 
     DirLight& dirLight = programState->dirLight;
 
@@ -365,7 +374,7 @@ int main() {
 
         //light settings
         dirLight.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-        dirLight.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
+        dirLight.ambient = glm::vec3(0.7f);
         dirLight.diffuse = glm::vec3(0.8f, 0.8f, 0.8f);
         dirLight.specular = glm::vec3(0.2f, 0.2f, 0.2f);
 
@@ -406,7 +415,7 @@ int main() {
 //        glDrawArrays(GL_TRIANGLES, 0, 6);
 //        glBindVertexArray(0);
 
-        //renderujemo dno
+        //unda da sea
         //----------
         planeShader.use();
         glm::mat4 model = glm::mat4(1.0f);
@@ -445,7 +454,7 @@ int main() {
         //ourShader.setFloat("material.shininess", 16.0f);
 
         //point light
-        pointLight.position = glm::vec3(4.0 , 4.0f, 4.0);
+        pointLight.position = glm::vec3(0.0f, 1.0f, 5.0f);
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -496,8 +505,8 @@ int main() {
 
         //render plane model
         glm::mat4 planeModel = model;
-        planeModel = glm::translate(planeModel,glm::vec3 (4.0f));
-        //planeModel = glm::scale(planeModel, glm::vec3(6.0f, 5.0f, 5.0f));
+        planeModel = glm::rotate(planeModel, glm::radians(currentFrame*100.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        planeModel = glm::translate(planeModel, glm::vec3(4.0f*cos(currentFrame), 4.0f,4.0f*sin(currentFrame)));
         planeModel = glm::rotate(planeModel,glm::radians(180.0f), glm::vec3(0.0f ,0.0f, 1.0f));
         planeModel = glm::rotate(planeModel,glm::radians(90.0f), glm::vec3(1.0f ,0.0f, 0.0f));
         ourShader.setMat4("model", planeModel);
@@ -512,14 +521,16 @@ int main() {
         blendingShader.setMat4("projection", projection);
         blendingShader.setMat4("view", view);
 
-        blendingShader.setVec3("dirLight.direction", dirLight.direction);
-        blendingShader.setVec3("dirLight.ambient", dirLight.ambient);
-        blendingShader.setVec3("dirLight.diffuse", dirLight.diffuse);
-        blendingShader.setVec3("dirLight.specular", dirLight.specular);
-        blendingShader.setFloat("shininess", 32.0f);
+//        blendingShader.setVec3("dirLight.direction", dirLight.direction);
+//        blendingShader.setVec3("dirLight.ambient", dirLight.ambient);
+//        blendingShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+//        blendingShader.setVec3("dirLight.specular", dirLight.specular);
+//        blendingShader.setFloat("shininess", 32.0f);
 
+        glm::mat4 waterModel = model;
+        waterModel = glm::translate(waterModel, glm::vec3(0.0f, -0.5f,0.0f));
         blendingShader.use();
-        blendingShader.setMat4("model", model);
+        blendingShader.setMat4("model", waterModel);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         //if (programState->ImGuiEnabled)
