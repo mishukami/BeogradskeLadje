@@ -534,8 +534,10 @@ int main() {
 
         //render plane model
         glm::mat4 planeModel = model;
-        planeModel = glm::rotate(planeModel, glm::radians(currentFrame*100.0f), glm::vec3(0.0f, -1.0f, 0.0f));
         planeModel = glm::translate(planeModel, glm::vec3(4.0f*cos(currentFrame), 4.0f,4.0f*sin(currentFrame)));
+        planeModel = glm::rotate(planeModel, currentFrame, glm::vec3(0.0f, -1.0f, 0.0f));
+
+        planeModel = glm::rotate(planeModel, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         planeModel = glm::rotate(planeModel,glm::radians(180.0f), glm::vec3(0.0f ,0.0f, 1.0f));
         planeModel = glm::rotate(planeModel,glm::radians(90.0f), glm::vec3(1.0f ,0.0f, 0.0f));
         ourShader.setMat4("model", planeModel);
