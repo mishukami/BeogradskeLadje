@@ -28,7 +28,7 @@ void main()
     vec3 viewDir = normalize(viewPosition - FragPos);
     vec3 result = CalcDirLight(dirLight, normal, viewDir);
 
-    result.rgb *= 0.4;
+    result.rgb *= 0.1;
     FragColor = vec4(result, 1.0);
 }
 
