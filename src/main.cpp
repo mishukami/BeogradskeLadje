@@ -326,6 +326,20 @@ int main() {
     ourCity.SetShaderTextureNamePrefix("material.");
   //  stbi_set_flip_vertically_on_load(true);
 
+
+    //flag
+    stbi_set_flip_vertically_on_load(false);
+    Model ourFlag("resources/objects/red_flag/scene.gltf");
+    ourFlag.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
+
+
+//    //pole
+//    stbi_set_flip_vertically_on_load(false);
+//    Model ourPole("resources/objects/flag_pole/scene.gltf");
+//    ourPole.SetShaderTextureNamePrefix("material.");
+//    stbi_set_flip_vertically_on_load(true);
+
     //boat
     stbi_set_flip_vertically_on_load(false);
     Model ourBoat("resources/objects/victorian_row_boat/scene.gltf");
@@ -558,9 +572,17 @@ int main() {
         // render the loaded model
 
         model = glm::mat4(1.0f);
+
+        //render city model far far
+        glm::mat4 cityModelFarFar = model;
+        cityModelFarFar = glm::translate(cityModelFarFar,glm::vec3 (0.0f, 1.0f, -5.0f));
+        cityModelFarFar = glm::scale(cityModelFarFar, glm::vec3(1.0f, 0.5f, 1.0f));
+        cityModelFarFar = glm::rotate(cityModelFarFar,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        ourShader.setMat4("model", cityModelFarFar);
+        ourCity.Draw(ourShader);
 //      render city model far
         glm::mat4 cityModelFar = model;
-        cityModelFar = glm::translate(cityModelFar,glm::vec3 (0.0f, -0.5f, -2.0f));
+        cityModelFar = glm::translate(cityModelFar,glm::vec3 (0.0f, 1.0f, -3.0f));
         cityModelFar = glm::scale(cityModelFar, glm::vec3(1.0f, 0.7f, 1.0f));
         cityModelFar = glm::rotate(cityModelFar,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
         ourShader.setMat4("model", cityModelFar);
@@ -568,7 +590,7 @@ int main() {
 
 //        render city model
         glm::mat4 cityModelMiddle = model;
-        cityModelMiddle = glm::translate(cityModelMiddle,glm::vec3 (0.0f, -0.5f, 0.0f));
+        cityModelMiddle = glm::translate(cityModelMiddle,glm::vec3 (0.0f, 1.0f, -1.0f));
         //cityModelMiddle = glm::scale(cityModelMiddle, glm::vec3(1.2f));
         cityModelMiddle = glm::rotate(cityModelMiddle,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
         ourShader.setMat4("model", cityModelMiddle);
@@ -576,23 +598,52 @@ int main() {
 
 //        render city model near
         glm::mat4 cityModelNear = model;
-        cityModelNear = glm::translate(cityModelNear,glm::vec3 (0.0f, -0.5f, 2.0f));
+        cityModelNear = glm::translate(cityModelNear,glm::vec3 (0.0f, 1.0f, 1.0f));
         cityModelNear = glm::scale(cityModelNear, glm::vec3(1.0f, 1.3f, 1.0f));
         cityModelNear = glm::rotate(cityModelNear,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
         ourShader.setMat4("model", cityModelNear);
         ourCity.Draw(ourShader);
 
+        //render city model small near
+        glm::mat4 cityModelSNear = model;
+        cityModelSNear = glm::translate(cityModelSNear,glm::vec3 (0.0f, 1.0f, 3.0f));
+        cityModelSNear = glm::scale(cityModelSNear, glm::vec3(1.0f, 1.0f, 1.0f));
+        cityModelSNear = glm::rotate(cityModelSNear,glm::radians(90.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        ourShader.setMat4("model", cityModelSNear);
+        ourCity.Draw(ourShader);
+
         //render boat model
         glm::mat4 boatModel = model;
-        boatModel = glm::translate(boatModel,glm::vec3 (0.0f, 0.0f, 0.5f));
-        boatModel = glm::scale(boatModel, glm::vec3(6.0f, 6.0f, 5.0f));
+        boatModel = glm::translate(boatModel,glm::vec3 (0.0f, 0.0f, -0.5f));
+        boatModel = glm::scale(boatModel, glm::vec3(6.0f, 6.0f, 6.0f));
         //cityModel = glm::rotate(cityModel,glm::radians(195.0f), glm::vec3(0.0f ,1.0f, 0.0f));
         ourShader.setMat4("model", boatModel);
         ourBoat.Draw(ourShader);
 
+        //render flag model
+        glm::mat4 flagModel = model;
+        flagModel = glm::translate(flagModel,glm::vec3 (0.0f, 7.0f, 1.0f));
+        flagModel = glm::scale(flagModel, glm::vec3(1.5f, 1.0f, 1.5f));
+        flagModel = glm::rotate(flagModel,glm::radians(180.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        flagModel = glm::rotate(flagModel,glm::radians(-90.0f), glm::vec3(1.0f ,0.0f, 0.0f));
+        flagModel = glm::rotate(flagModel,glm::radians(90.0f), glm::vec3(0.0f ,0.0f, 1.0f));
+        ourShader.setMat4("model", flagModel);
+        ourFlag.Draw(ourShader);
+
+        //render pole model
+        glm::mat4 poleModel = model;
+        poleModel = glm::translate(poleModel,glm::vec3 (0.0f, -1.2f, 1.0f));
+        poleModel = glm::scale(poleModel, glm::vec3(3.0f));
+        //cityModel = glm::rotate(cityModel,glm::radians(195.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        poleModel = glm::rotate(poleModel,glm::radians(180.0f), glm::vec3(0.0f ,1.0f, 0.0f));
+        poleModel = glm::rotate(poleModel,glm::radians(-90.0f), glm::vec3(1.0f ,0.0f, 0.0f));
+        poleModel = glm::rotate(poleModel,glm::radians(90.0f), glm::vec3(0.0f ,0.0f, 1.0f));
+        ourShader.setMat4("model", poleModel);
+        ourFlag.Draw(ourShader);
+
         //render plane model
         glm::mat4 planeModel = model;
-        planeModel = glm::translate(planeModel, glm::vec3(4.0f*cos(currentFrame), 4.0f,4.0f*sin(currentFrame)));
+        planeModel = glm::translate(planeModel, glm::vec3(5.0f*cos(currentFrame), 5.0f,5.0f*sin(currentFrame)));
         planeModel = glm::rotate(planeModel, currentFrame, glm::vec3(0.0f, -1.0f, 0.0f));
 
         planeModel = glm::rotate(planeModel, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
