@@ -19,5 +19,6 @@ void main()
 //     FragColor = vec4(result, 1.0);
 
           FragColor = texture(skybox, TexCoords);
+          FragColor.rgb *= 0.7;
           BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
