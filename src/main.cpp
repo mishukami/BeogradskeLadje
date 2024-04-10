@@ -33,13 +33,13 @@ unsigned int loadCubemap(vector<std::string> faces);
 void renderQuad();
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+int width = 800;
+int height = 600;
 
 // camera
 
-float lastX = SCR_WIDTH / 2.0f;
-float lastY = SCR_HEIGHT / 2.0f;
+float lastX = (float) width / 2.0f;
+float lastY = (float) height / 2.0f;
 bool firstMouse = true;
 
 // timing
@@ -122,6 +122,10 @@ ProgramState *programState;
 
 void DrawImGui(ProgramState *programState);
 
+unsigned int colorBuffers[2];
+unsigned int rboDepth;
+unsigned int pingpongColorbuffers[2];
+
 int main() {
     // glfw: initialize and configure
     // ------------------------------
@@ -136,7 +140,7 @@ int main() {
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "JedrilicePanonskogMora", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(width, height, "JedrilicePanonskogMora", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -248,12 +252,12 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     vector<std::string> faces_day {
-            FileSystem::getPath("resources/textures/skybox/px.png"),
-            FileSystem::getPath("resources/textures/skybox/nx.png"),
-            FileSystem::getPath("resources/textures/skybox/py.png"),
-            FileSystem::getPath("resources/textures/skybox/ny.png"),
-            FileSystem::getPath("resources/textures/skybox/pz.png"),
-            FileSystem::getPath("resources/textures/skybox/nz.png")
+            FileSystem::getPath("resources/textures/skybox1/px.png"),
+            FileSystem::getPath("resources/textures/skybox1/nx.png"),
+            FileSystem::getPath("resources/textures/skybox1/py.png"),
+            FileSystem::getPath("resources/textures/skybox1/ny.png"),
+            FileSystem::getPath("resources/textures/skybox1/pz.png"),
+            FileSystem::getPath("resources/textures/skybox1/nz.png")
     };
     stbi_set_flip_vertically_on_load(false);
     unsigned int cubemapTexture = loadCubemap(faces_day);
@@ -356,13 +360,12 @@ int main() {
     unsigned int hdrFBO;
     glGenFramebuffers(1, &hdrFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-    unsigned int colorBuffers[2];
     glGenTextures(2, colorBuffers);
     for (unsigned int i = 0; i < 2; i++)
     {
         glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
         glTexImage2D(
-                GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL
+                GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL
         );
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -375,10 +378,9 @@ int main() {
     }
 
     // create and attach depth buffer (renderbuffer)
-    unsigned int rboDepth;
     glGenRenderbuffers(1, &rboDepth);
     glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
     // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
     unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -390,14 +392,13 @@ int main() {
 
     // ping-pong-framebuffer for blurring
     unsigned int pingpongFBO[2];
-    unsigned int pingpongColorbuffers[2];
     glGenFramebuffers(2, pingpongFBO);
     glGenTextures(2, pingpongColorbuffers);
     for (unsigned int i = 0; i < 2; i++)
     {
         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
         glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
@@ -434,6 +435,9 @@ int main() {
 
     hdrShader.use();
     hdrShader.setInt("hdrBuffer", 0);
+    hdrShader.setInt("bloomBlur", 1);
+    blurShader.use();
+    blurShader.setInt("image", 0);
 
     //let there be.. lights!
     PointLight& pointLight = programState->pointLight;
@@ -522,7 +526,7 @@ int main() {
         glm::mat4 model = glm::mat4(1.0f);
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
-                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+                                                (float) width / (float) height, 0.1f, 100.0f);
         glm:: mat4 view = programState->camera.GetViewMatrix();
         planeShader.setMat4("view", view);
         planeShader.setMat4("projection", projection);
@@ -533,7 +537,7 @@ int main() {
         model = glm::translate(model, glm::vec3(0.0f, -5.0f, 0.0f));
         planeShader.setMat4("model", model);
 
-
+//dodaj svetla za plane shader
         planeShader.setVec3("dirLight.direction", dirLight.direction);
         planeShader.setVec3("dirLight.ambient", dirLight.ambient);
         planeShader.setVec3("dirLight.diffuse", dirLight.diffuse);
@@ -555,7 +559,7 @@ int main() {
         //ourShader.setFloat("material.shininess", 16.0f);
 
         //point light
-        pointLight.position = glm::vec3(0.0f, 1.0f, 5.0f);
+        pointLight.position = glm::vec3(0.0f, 1.0f, 4.8f);
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -739,8 +743,8 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-   // programState->SaveToFile("resources/program_state.txt");
+    //DELEEETEEE
+    programState->SaveToFile("resources/program_state.txt");
     delete programState;
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVAO);
@@ -751,6 +755,23 @@ int main() {
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
+}
+
+void hdr_resize() {
+    for (unsigned int i = 0; i < 2; i++) {
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+        glTexImage2D(
+                GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL
+        );
+    }
+
+    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+
+    for (unsigned int i = 0; i < 2; i++) {
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    }
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
@@ -771,9 +792,11 @@ void processInput(GLFWwindow *window) {
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
+void framebuffer_size_callback(GLFWwindow *window, int _width, int _height) {
+    width = _width;
+    height = _height;
+    hdr_resize();
+
     glViewport(0, 0, width, height);
 }
 

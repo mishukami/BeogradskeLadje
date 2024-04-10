@@ -9,7 +9,7 @@ void main()
 {
     vec4 tmp = texture(texture1, TexCoords);
     tmp.a *= 0.7;
-    tmp.rgb *= 0.6;
+    //tmp.rgb *= 0.6;
     FragColor = tmp;
 
 }
