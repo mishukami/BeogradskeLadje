@@ -7,7 +7,7 @@ Postoji jedna urbana legenda, koju je moja mama kao arhitekta sa zadovoljstvom p
 </p>
 
 # Tehnički opis
-Ovaj projekat uradjen je u programskom jeziku C++ uz pomoć OpenGL-a i koristeći se raznim tehnikama naučenim na kursu Računarska grafika, a neki od njih su: skybox korišćen za nebo na sceni, blending za površinu vode ispod koje može da se vidi dno, bloom/hdr za prelivanje svetlosti koja isijava iz fenjera, face culling u cilju poboljšanja performansi neiscrtavanjem delova scene koji se ne vide, Blinn-Phong model osvetljenja za prirodniji izgled svetla...
+Ovaj projekat uradjen je u programskom jeziku C++ uz pomoć OpenGL-a i koristeći se raznim tehnikama naučenim na kursu Računarska grafika, a neki od njih su: skybox korišćen za nebo na sceni, blending za površinu vode ispod koje može da se vidi dno, bloom/hdr za prelivanje svetlosti koja isijava iz fenjera, face culling u cilju poboljšanja performansi neiscrtavanjem delova scene koji se ne vide, Blinn-Phong model osvetljenja za prirodniji izgled svetla, transformacije matrica za kružno kretanje aviona...
 
 # Korišćeno
 [Model zgrade](https://sketchfab.com/3d-models/building-06-162a09fdfe7a4accb69bedb04b633e7f)
