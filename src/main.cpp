@@ -166,19 +166,6 @@ int main() {
 
     programState = new ProgramState;
     programState->LoadFromFile("resources/program_state.txt");
-//    if (programState->ImGuiEnabled) {
-//        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-//    }
-//    // Init Imgui
-//    IMGUI_CHECKVERSION();
-//    ImGui::CreateContext();
-//    ImGuiIO &io = ImGui::GetIO();
-//    (void) io;
-
-
-
-//    ImGui_ImplGlfw_InitForOpenGL(window, true);
-//    ImGui_ImplOpenGL3_Init("#version 330 core");
 
     // configure global opengl state
     // -----------------------------
@@ -270,14 +257,14 @@ int main() {
     //Ravan koja predstavlja vodu
     float planeVertices[] = {
             //      vertex                      texture             normal
-            50.0f, -1.0f,  50.0f,  10.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-            -50.0f, -1.0f, -50.0f,  0.0f, 10.0f, 0.0f, 1.0f, 0.0f,
+            50.0f, -1.0f,  50.0f,  15.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f, -50.0f,  0.0f, 15.0f, 0.0f, 1.0f, 0.0f,
             -50.0f, -1.0f,  50.0f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
 
-            50.0f, -1.0f,  50.0f,  10.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-            50.0f, -1.0f, -50.0f,  10.0f, 10.0f, 0.0f, 1.0f, 0.0f,
-            -50.0f, -1.0f, -50.0f,  0.0f, 10.0f, 0.0f, 1.0f, 0.0f
+            50.0f, -1.0f,  50.0f,  15.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            50.0f, -1.0f, -50.0f,  15.0f, 15.0f, 0.0f, 1.0f, 0.0f,
+            -50.0f, -1.0f, -50.0f,  0.0f, 15.0f, 0.0f, 1.0f, 0.0f
     };
 
     unsigned int planeVAO, planeVBO;
@@ -298,29 +285,13 @@ int main() {
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
 
-    //glBindVertexArray(0);
-
     unsigned int waterTexture = loadTexture("resources/textures/water_texture3.png");
     blendingShader.use();
     blendingShader.setInt("texture1", 0);
 
-    unsigned int sandTexture = loadTexture("resources/textures/sand_texture1.jpg");
+    unsigned int sandTexture = loadTexture("resources/textures/sand.jpg");
     planeShader.use();
     planeShader.setInt("texture1", 0);
-
-//
-//    // setup plane VAO
-//    unsigned int quadVAO, quadVBO;
-//    glGenVertexArrays(1, &quadVAO);
-//    glGenBuffers(1, &quadVBO);
-//    glBindVertexArray(quadVAO);
-//    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
 
     // load models
     // -----------
@@ -336,13 +307,6 @@ int main() {
     Model ourFlag("resources/objects/red_flag/scene.gltf");
     ourFlag.SetShaderTextureNamePrefix("material.");
     stbi_set_flip_vertically_on_load(true);
-
-
-//    //pole
-//    stbi_set_flip_vertically_on_load(false);
-//    Model ourPole("resources/objects/flag_pole/scene.gltf");
-//    ourPole.SetShaderTextureNamePrefix("material.");
-//    stbi_set_flip_vertically_on_load(true);
 
     //boat
     stbi_set_flip_vertically_on_load(false);
@@ -409,30 +373,6 @@ int main() {
             std::cout << "Framebuffer not complete!" << std::endl;
     }
 
-    // configure floating point framebuffer
-    // ------------------------------------
-//    unsigned int hdrFBO;
-//    glGenFramebuffers(1, &hdrFBO);
-//    // create floating point color buffer
-//    unsigned int colorBuffer;
-//    glGenTextures(1, &colorBuffer);
-//    glBindTexture(GL_TEXTURE_2D, colorBuffer);
-//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//    // create depth buffer (renderbuffer)
-//    unsigned int rboDepth;
-//    glGenRenderbuffers(1, &rboDepth);
-//    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-//    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
-//    // attach buffers
-//    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-//    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
-//    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-//    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-//        std::cout << "Framebuffer not complete!" << std::endl;
-//    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
     hdrShader.use();
     hdrShader.setInt("hdrBuffer", 0);
     hdrShader.setInt("bloomBlur", 1);
@@ -441,20 +381,10 @@ int main() {
 
     //let there be.. lights!
     PointLight& pointLight = programState->pointLight;
-//    pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-//    pointLight.ambient = glm::vec3(1.0, 1.0, 1.0);
-//    pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
-//    pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
-//
-//
-//    pointLight.constant = 1.0f;
-//    pointLight.linear = 0.09f;
-//    pointLight.quadratic = 0.032f;
-
     pointLight.position = glm::vec3(0.0f, 1.0f, 2.7f);
-    pointLight.ambient = glm::vec3(0.95, 0.5, 0.0);
-    pointLight.diffuse = glm::vec3(4.0f, 2.6f, 0.4f);
-    pointLight.specular = glm::vec3(0.5f);
+    pointLight.ambient = glm::vec3(2.5, 1, 0.0);
+    pointLight.diffuse = glm::vec3(6.0f, 2.6f, 0.4f);
+    pointLight.specular = glm::vec3(1.5f);
 
     pointLight.constant = 1.0f;
     pointLight.linear = 0.5f;
@@ -493,33 +423,6 @@ int main() {
         glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//        //renderujemo vodu
-//        planeShader.use();
-//        glm::mat4 model = glm::mat4(1.0f);
-//        // view/projection transformations
-//        glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
-//                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
-//        glm::mat4 view = programState->camera.GetViewMatrix();
-//        planeShader.setMat4("view", view);
-//        planeShader.setMat4("projection", projection);
-//
-//        glBindVertexArray(planeVAO);
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, waterTexture);
-//        model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-//        planeShader.setMat4("model", model);
-//
-//
-//        planeShader.setVec3("dirLight.direction", dirLight.direction);
-//        planeShader.setVec3("dirLight.ambient", dirLight.ambient);
-//        planeShader.setVec3("dirLight.diffuse", dirLight.diffuse);
-//        planeShader.setVec3("dirLight.specular", dirLight.specular);
-//        planeShader.setFloat("shininess", 1.0f);
-//
-//
-//        glDrawArrays(GL_TRIANGLES, 0, 6);
-//        glBindVertexArray(0);
-
         //unda da sea
         //----------
         planeShader.use();
@@ -537,7 +440,7 @@ int main() {
         model = glm::translate(model, glm::vec3(0.0f, -5.0f, 0.0f));
         planeShader.setMat4("model", model);
 
-//dodaj svetla za plane shader
+        //plane shader lights
         planeShader.setVec3("dirLight.direction", dirLight.direction);
         planeShader.setVec3("dirLight.ambient", dirLight.ambient);
         planeShader.setVec3("dirLight.diffuse", dirLight.diffuse);
@@ -556,7 +459,6 @@ int main() {
         ourShader.setVec3("dirLight.ambient", dirLight.ambient);
         ourShader.setVec3("dirLight.diffuse", dirLight.diffuse);
         ourShader.setVec3("dirLight.specular", dirLight.specular);
-        //ourShader.setFloat("material.shininess", 16.0f);
 
         //point light
         pointLight.position = glm::vec3(0.0f, 1.0f, 4.8f);
@@ -665,20 +567,11 @@ int main() {
         blendingShader.setMat4("projection", projection);
         blendingShader.setMat4("view", view);
 
-//        blendingShader.setVec3("dirLight.direction", dirLight.direction);
-//        blendingShader.setVec3("dirLight.ambient", dirLight.ambient);
-//        blendingShader.setVec3("dirLight.diffuse", dirLight.diffuse);
-//        blendingShader.setVec3("dirLight.specular", dirLight.specular);
-//        blendingShader.setFloat("shininess", 32.0f);
-
         glm::mat4 waterModel = model;
         waterModel = glm::translate(waterModel, glm::vec3(0.0f, -0.5f,0.0f));
         blendingShader.use();
         blendingShader.setMat4("model", waterModel);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        //if (programState->ImGuiEnabled)
-         //   DrawImGui(programState);
 
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
@@ -725,32 +618,24 @@ int main() {
         hdrShader.setFloat("exposure", exposure);
         renderQuad();
 
-       // std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
-//        // 2. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
-//        // --------------------------------------------------------------------------------------------------------------------------
-//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//        hdrShader.use();
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, colorBuffer);
-//        hdrShader.setInt("hdr", hdr);
-//        hdrShader.setFloat("exposure", exposure);
-//        renderQuad();
-
-        //std::cout << "hdr: " << (hdr ? "on" : "off") << "| exposure: " << exposure << std::endl;
-
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    //DELEEETEEE
+    //delete
     programState->SaveToFile("resources/program_state.txt");
     delete programState;
     glDeleteVertexArrays(1, &skyboxVAO);
-    glDeleteBuffers(1, &skyboxVAO);
-   // ImGui_ImplOpenGL3_Shutdown();
-    //ImGui_ImplGlfw_Shutdown();
-    //ImGui::DestroyContext();
+    glDeleteBuffers(1, &skyboxVBO);
+    glDeleteVertexArrays(1, &planeVAO);
+    glDeleteBuffers(1, &planeVBO);
+    glDeleteFramebuffers(1, &hdrFBO);
+    glDeleteTextures(2, colorBuffers);
+    glDeleteRenderbuffers(1, &rboDepth);
+    glDeleteFramebuffers(2, pingpongFBO);
+    glDeleteTextures(2, pingpongColorbuffers);
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
