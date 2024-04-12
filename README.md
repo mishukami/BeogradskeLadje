@@ -2,8 +2,8 @@
 Postoji jedna urbana legenda, koju je moja mama kao arhitekta sa zadovoljstvom prepričavala dok sam bila mala. Legenda kaže da blokovi 61-64 na Novom Beogradu gde sam odrasla, po arhitektonsko-urbanističkoj zamisli predstavljaju jedrilice u panonskom moru, koje je nekada prekrivalo ove prostore. Zajedno sa avionima koji svakodnevno sleću i poleću pored naših blokova, ove jedrilice plove i danas.
 
 <p float="left">
-  <img src="img/mojiblokovi.png" width="500" />
-  <img src="img/blokovi.jpg" width="500" /> 
+  <img src="img/mojiblokovi.png" width="300" />
+  <img src="img/blokovi.jpg" width="300" /> 
 </p>
 
 # Tehnički opis
