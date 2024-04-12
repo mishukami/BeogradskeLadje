@@ -1,6 +1,11 @@
 # Jedrilice Panonskog Mora
 Postoji jedna urbana legenda, koju je moja mama kao arhitekta sa zadovoljstvom prepričavala dok sam bila mala. Legenda kaže da blokovi 61-64 na Novom Beogradu gde sam odrasla, po arhitektonsko-urbanističkoj zamisli predstavljaju jedrilice u panonskom moru, koje je nekada prekrivalo ove prostore. Zajedno sa avionima koji svakodnevno sleću i poleću pored naših blokova, ove jedrilice plove i danas.
 
+<p float="left">
+  <img src="img/mojiblokovi.png" width="500" />
+  <img src="img/blokovi.jpg" width="500" /> 
+</p>
+
 # Tehnički opis
 Ovaj projekat uradjen je u programskom jeziku C++ uz OpenGl i koristeći se raznim tehnikama naučenim na kursu Računarska grafika, a neki od njih su: skybox korišćen za nebo na sceni, blending za površinu vode ispod koje može da se vidi dno, bloom/hdr za prelivanje svetlosti koja isijava iz fenjera, face culling u cilju poboljšanja performansi neiscrtavanjem delova scene koji se ne vide, Blinn-Phong model osvetljenja za prirodniji izgled svetla...
 
